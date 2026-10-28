@@ -34,7 +34,7 @@ jobs:
           gradle-version: '8.9'
 
       - name: Extract DayMate project
-        run: unzip -o DayMate_Android_Project.zip
+        run: unzip -o DayMate_Complete_Grid_Settings_Project.zip
       
       - name: Fix Java and Kotlin targets
         run: |
