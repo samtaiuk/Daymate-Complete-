@@ -1,11 +1,9 @@
-
 name: Build DayMate APK
 
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
+    branches: [ main ]
 
 permissions:
   contents: read
@@ -13,12 +11,11 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Check out repository
+      - name: Check out source
         uses: actions/checkout@v4
 
-      - name: Set up Java 17
+      - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -27,30 +24,28 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
         with:
-          accept-android-sdk-licenses: true
-          packages: 'platforms;android-35,build-tools;35.0.0'
+          packages: 'platform-tools'
+          accept-android-sdk-licenses: 'true'
+          log-accepted-android-sdk-licenses: 'false'
 
-      - name: Accept Android SDK licenses
-        run: yes | sdkmanager --licenses
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
 
       - name: Extract DayMate project
-        run: |
-          unzip -q DayMate_Complete_Grid_Settings_Project.zip
-          test -f DayMate/settings.gradle
-          test -f DayMate/app/build.gradle
-
-      - name: Set Java and Kotlin targets to 17
+        run: unzip -o DayMate_Android_Project.zip
+      
+      - name: Fix Java and Kotlin targets
         run: |
           cat > DayMate/app/build.gradle <<'EOF'
           plugins {
               id 'com.android.application'
               id 'org.jetbrains.kotlin.android'
           }
-
           android {
               namespace 'com.daymate.app'
               compileSdk 35
-
               defaultConfig {
                   applicationId 'com.daymate.app'
                   minSdk 26
@@ -58,27 +53,19 @@ jobs:
                   versionCode 1
                   versionName '1.0'
               }
-
               compileOptions {
                   sourceCompatibility JavaVersion.VERSION_17
                   targetCompatibility JavaVersion.VERSION_17
               }
-
               kotlinOptions {
                   jvmTarget = '17'
               }
           }
           EOF
-
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.9'
-
+          
       - name: Build debug APK
-        run: |
-          cd DayMate
-          gradle assembleDebug
+        working-directory: DayMate
+        run: gradle assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
