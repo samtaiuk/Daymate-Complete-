@@ -18,12 +18,7 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Extract DayMate project
-        run: |
-          unzip -q DayMate_Complete_Grid_Settings_Project.zip
-          test -f DayMate/settings.gradle
-
-      - name: Set up Java
+      - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -31,13 +26,56 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          accept-android-sdk-licenses: true
+          packages: 'platforms;android-35,build-tools;35.0.0'
+
+      - name: Accept Android SDK licenses
+        run: yes | sdkmanager --licenses
+
+      - name: Extract DayMate project
+        run: |
+          unzip -q DayMate_Complete_Grid_Settings_Project.zip
+          test -f DayMate/settings.gradle
+          test -f DayMate/app/build.gradle
+
+      - name: Set Java and Kotlin targets to 17
+        run: |
+          cat > DayMate/app/build.gradle <<'EOF'
+          plugins {
+              id 'com.android.application'
+              id 'org.jetbrains.kotlin.android'
+          }
+
+          android {
+              namespace 'com.daymate.app'
+              compileSdk 35
+
+              defaultConfig {
+                  applicationId 'com.daymate.app'
+                  minSdk 26
+                  targetSdk 35
+                  versionCode 1
+                  versionName '1.0'
+              }
+
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
+              }
+
+              kotlinOptions {
+                  jvmTarget = '17'
+              }
+          }
+          EOF
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
 
-      - name: Build APK
+      - name: Build debug APK
         run: |
           cd DayMate
           gradle assembleDebug
@@ -48,4 +86,5 @@ jobs:
           name: DayMate-debug-apk
           path: DayMate/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+          
           
